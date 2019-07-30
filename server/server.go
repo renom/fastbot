@@ -239,6 +239,8 @@ func (s *Server) Listen() {
 						}
 					case command[0] == "players" && len(command) == 1:
 						s.Whisper(sender, "Player list: "+strings.Join(s.players, ", "))
+					case command[0] == "admins" && len(command) == 1:
+						s.Whisper(sender, "Admin list: "+strings.Join(s.admins, ", "))
 					case command[0] == "help" && len(command) == 1:
 						s.Whisper(sender, "Command list:\n"+
 							"color 1 {red,blue,green,purple,black,brown,orange,white,teal} - set up a side's color\n"+
@@ -247,6 +249,7 @@ func (s *Server) Listen() {
 							"drop username - the same but by username\n"+
 							"players - display players allowed to join\n"+
 							"players {username_1,username_2,...,username_N} - set up players allowed to join\n"+
+							"admins - display admins list\n"+
 							"help - request command reference")
 					}
 				}
