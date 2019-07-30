@@ -52,7 +52,6 @@ type Server struct {
 }
 
 var colors = types.StringList{"red", "blue", "green", "purple", "black", "brown", "orange", "white", "teal"}
-var units = "/usr/share/wesnoth/data/core/units.cfg"
 
 func NewServer(hostname string, port uint16, version string, username string,
 	password string, title string, game []byte, admins types.StringList, players types.StringList, timeout time.Duration) Server {

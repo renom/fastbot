@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	eras     = "/usr/share/wesnoth/data/multiplayer/eras.cfg"
+	Eras     = "/usr/share/wesnoth/data/multiplayer/eras.cfg"
 	sideData = wml.Data{
 		"allow_changes":   true,
 		"chose_random":    false,
@@ -79,7 +79,7 @@ func (g *Game) Parse() {
 	g.Id = s.FindStringSubmatch(g.scenario)[1]
 	g.Name = s.FindStringSubmatch(g.scenario)[2]
 	e, _ := regexp.Compile(`(?U)\[era\]\n(?:[^\[\]]*\n)*\tid="era_` + g.Era + `"\n(?:.*\n)*\tname=_?"(.*)"\n(?:.*\n)*\[/era\]`)
-	g.era = string(e.Find(Preprocess(eras, nil))) + "\n"
+	g.era = string(e.Find(Preprocess(Eras, nil))) + "\n"
 	g.EraName = e.FindStringSubmatch(g.era)[1]
 }
 

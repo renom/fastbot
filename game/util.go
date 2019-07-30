@@ -30,9 +30,9 @@ import (
 )
 
 var (
-	path    = os.TempDir() + "/fastbot"
-	output  = path + "/output"
-	wesnoth = "/usr/bin/wesnoth"
+	Wesnoth = "/usr/bin/wesnoth"
+	Path    = os.TempDir() + "/fastbot"
+	output  = Path + "/output"
 )
 
 func replaceSide(scenario string, side wml.Tag, indent uint) string {
@@ -46,7 +46,7 @@ func Preprocess(filePath string, defines []string) []byte {
 		os.MkdirAll(output, 0755)
 	}
 	cmd := exec.Command(
-		wesnoth,
+		Wesnoth,
 		"-p",
 		filePath,
 		output,

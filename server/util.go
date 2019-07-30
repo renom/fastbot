@@ -25,6 +25,8 @@ import (
 	"github.com/renom/fastbot/wml"
 )
 
+var Units = "/usr/share/wesnoth/data/core/units.cfg"
+
 func SplitMessage(text string) []string {
 	upperLimit := 256
 
@@ -70,7 +72,7 @@ func insertFaction(side *Side, faction wml.Data, textdomain string) wml.Data {
 		`[\t ]*id="` + leader + `"\n`)
 
 	var gender string
-	if subString := r.FindSubmatch(game.Preprocess(units, nil)); len(subString) == 2 {
+	if subString := r.FindSubmatch(game.Preprocess(Units, nil)); len(subString) == 2 {
 		gender = string(subString[1])
 		if genders := strings.Split(gender, ","); len(genders) == 2 {
 			rand.Seed(time.Now().UTC().UnixNano())
