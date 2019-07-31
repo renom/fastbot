@@ -41,7 +41,6 @@ var (
 	era             = "default"
 	title           = "Game 1"
 	admins          = types.StringList{}
-	players         = types.StringList{}
 	baseDir         = ""
 )
 
@@ -59,9 +58,8 @@ func main() {
 	// Parameters that require extra check
 	portUint := flag.Uint("port", uint(port), "The port")
 	scenarioString := flag.String("scenario", "", "The default scenario")
-	accountsString := flag.String("accounts", "", "The accounts")
-	adminsString := flag.String("admins", "", "The admins")
-	playersString := flag.String("players", "", "The players")
+	accountsString := flag.String("accounts", "", "The bot accounts")
+	adminsString := flag.String("admins", "", "The admin usernames")
 	flag.Parse()
 	// Extra check
 	if 0 < int(*portUint) && int(*portUint) <= 65535 {
@@ -82,9 +80,6 @@ func main() {
 	}
 	if *adminsString != "" {
 		admins = strings.Split(*adminsString, ",")
-	}
-	if *playersString != "" {
-		players = strings.Split(*playersString, ",")
 	}
 
 	var wg sync.WaitGroup
