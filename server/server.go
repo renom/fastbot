@@ -104,10 +104,59 @@ func (s *Server) Connect() error {
 		return errors.New("Expects the server to request a version, but it doesn't.")
 	}
 	// Expects the server to require the log in step, otherwise return an error
-	if data := s.receiveData(); bytes.Equal(data, wml.EmptyTag("mustlogin").Bytes()) {
-		s.sendData((&wml.Tag{"login", wml.Data{"selective_ping": "1", "username": s.username}}).Bytes())
-	} else {
-		return errors.New("Expects the server to require a log in step, but it doesn't.")
+	{
+		rawData := s.receiveData()
+		data := wml.ParseData(string(rawData))
+		switch {
+		case bytes.Equal(rawData, wml.EmptyTag("mustlogin").Bytes()):
+			s.sendData((&wml.Tag{"login", wml.Data{"selective_ping": "1", "username": s.username}}).Bytes())
+		case data.Contains("redirect"):
+			if redirect, ok := data["redirect"].(wml.Data); ok {
+				host, okHost := redirect["host"].(string)
+				port, okPort := redirect["port"].(string)
+				if okHost && okPort {
+					portInt, err := strconv.Atoi(port)
+					if err == nil {
+						s.hostname = host
+						s.port = uint16(portInt)
+						return s.Connect()
+					}
+				}
+			}
+			fallthrough
+		default:
+			return errors.New("Expects the server to require a log in step, but it doesn't.")
+		}
+	}
+	rawData := s.receiveData()
+	data := wml.ParseData(string(rawData))
+	switch {
+	case data.Contains("error"):
+		if errorTag, ok := data["error"].(wml.Data); ok {
+			if code, ok := errorTag["error_code"].(string); ok {
+				switch code {
+				case "200":
+					if errorTag["password_request"].(string) == "yes" && errorTag["phpbb_encryption"].(string) == "yes" {
+						salt := errorTag["salt"].(string)
+						s.sendData((&wml.Tag{"login", wml.Data{"username": s.username, "password": Sum(s.password, salt)}}).Bytes())
+						goto nextCase
+					}
+				case "105":
+					if message, ok := errorTag["message"].(string); ok {
+						return errors.New(message)
+					} else {
+						return errors.New("The nickname is not registered. This server disallows unregistered nicknames.")
+					}
+				}
+			}
+		}
+		break
+	nextCase:
+		fallthrough
+	case bytes.Equal(rawData, wml.EmptyTag("join_lobby").Bytes()):
+		return nil
+	default:
+		return errors.New("An unknown error occurred")
 	}
 	return nil
 }
@@ -144,7 +193,9 @@ func (s *Server) StartGame() {
 func (s *Server) Listen() {
 	for {
 		data := wml.ParseData(string(s.receiveData()))
-		fmt.Printf("Received: %q\n", data)
+		if len(data) > 0 {
+			fmt.Printf("Received: %q\n", data)
+		}
 	DataSwitch:
 		switch {
 		case data.Contains("name") && data.Contains("side") && s.sides.FreeSlots() > 0:
@@ -350,10 +401,17 @@ func (s *Server) sendData(data []byte) {
 }
 
 func (s *Server) read(n int) []byte {
-	buffer := make([]byte, n)
-	_, s.err = s.conn.Read(buffer)
-	if s.err != nil {
-		return nil
+	result := []byte{}
+	count := 0
+	for count < n {
+		buffer := make([]byte, n-count)
+		var num int
+		num, s.err = s.conn.Read(buffer)
+		if s.err != nil {
+			return nil
+		}
+		count += num
+		result = append(result, buffer[:num]...)
 	}
-	return buffer
+	return result
 }
