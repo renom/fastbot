@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/renom/fastbot/game"
+	"github.com/renom/fastbot/config"
 )
 
 type Scenario struct {
@@ -48,7 +48,7 @@ func (s *Scenario) Body() string {
 
 func (s *Scenario) Path() string {
 	if s.path == "" && s.body != "" {
-		path := game.Path + "/" + strings.ReplaceAll(s.name, " ", "_") + ".cfg"
+		path := config.TmpDir + "/" + strings.ReplaceAll(s.name, " ", "_") + ".cfg"
 		ioutil.WriteFile(path, []byte(s.body), 0644)
 		s.path = path
 	}

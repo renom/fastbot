@@ -19,11 +19,12 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/renom/fastbot/config"
+	"github.com/renom/fastbot/scenario"
 	"github.com/renom/fastbot/wml"
 )
 
 var (
-	Eras     = "/usr/share/wesnoth/data/multiplayer/eras.cfg"
 	sideData = wml.Data{
 		"allow_changes":   true,
 		"chose_random":    false,
@@ -55,8 +56,7 @@ var (
 
 type Game struct {
 	Title    string
-	Path     string // A path to a scenario .cfg file
-	Defines  []string
+	Scenario scenario.Scenario
 	Era      string
 	Version  string
 	Id       string // Obtained by Parse()
@@ -66,8 +66,8 @@ type Game struct {
 	era      string // Obtained by Parse()
 }
 
-func NewGame(title string, path string, defines []string, era string, version string) Game {
-	game := Game{Title: title, Path: path, Defines: defines, Era: era, Version: version}
+func NewGame(title string, scenario scenario.Scenario, era string, version string) Game {
+	game := Game{Title: title, Scenario: scenario, Era: era, Version: version}
 	game.Parse()
 	return game
 }
@@ -75,12 +75,12 @@ func NewGame(title string, path string, defines []string, era string, version st
 func (g *Game) Parse() {
 	replacer := strings.NewReplacer("[multiplayer]", "[scenario]",
 		"[/multiplayer]", "[/scenario]")
-	g.scenario = replacer.Replace(string(Preprocess(g.Path, g.Defines)))
+	g.scenario = replacer.Replace(string(Preprocess(g.Scenario.Path(), g.Scenario.Defines())))
 	s, _ := regexp.Compile(`(?U)\[scenario\]\n(?:[^\[\]]*\n)*\tid="(.*)"\n(?:.*\n)*\tname=_?"(.*)"\n(?:.*\n)*\[/scenario\]`)
 	g.Id = s.FindStringSubmatch(g.scenario)[1]
 	g.Name = s.FindStringSubmatch(g.scenario)[2]
 	e, _ := regexp.Compile(`(?U)\[era\]\n(?:[^\[\]]*\n)*\tid="era_` + g.Era + `"\n(?:.*\n)*\tname=_?"(.*)"\n(?:.*\n)*\[/era\]`)
-	g.era = string(e.Find(Preprocess(Eras, nil))) + "\n"
+	g.era = string(e.Find(Preprocess(config.Eras, nil))) + "\n"
 	g.EraName = e.FindStringSubmatch(g.era)[1]
 }
 

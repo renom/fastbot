@@ -26,13 +26,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/renom/fastbot/config"
 	"github.com/renom/fastbot/wml"
 )
 
 var (
-	Wesnoth = "/usr/bin/wesnoth"
-	Path    = os.TempDir() + "/fastbot"
-	output  = Path + "/output"
+	output = config.TmpDir + "/output"
 )
 
 func replaceSide(scenario string, side wml.Tag, indent uint) string {
@@ -46,7 +45,7 @@ func Preprocess(filePath string, defines []string) []byte {
 		os.MkdirAll(output, 0755)
 	}
 	cmd := exec.Command(
-		Wesnoth,
+		config.Wesnoth,
 		"-p",
 		filePath,
 		output,
