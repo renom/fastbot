@@ -30,6 +30,10 @@ type Scenario struct {
 	defines []string
 }
 
+func NewScenario(name string, body string, defines []string) Scenario {
+	return Scenario{name: name, body: body, defines: defines}
+}
+
 func FromPath(path string, defines []string) Scenario {
 	filename := filepath.Base(path)
 	extension := filepath.Ext(filename)

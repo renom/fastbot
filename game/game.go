@@ -19,8 +19,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/renom/fastbot/config"
+	"github.com/renom/fastbot/era"
 	"github.com/renom/fastbot/scenario"
+	"github.com/renom/fastbot/wesnoth"
 	"github.com/renom/fastbot/wml"
 )
 
@@ -57,16 +58,14 @@ var (
 type Game struct {
 	Title    string
 	Scenario scenario.Scenario
-	Era      string
+	Era      era.Era
 	Version  string
 	Id       string // Obtained by Parse()
 	Name     string // Obtained by Parse()
-	EraName  string // Obtained by Parse()
 	scenario string // Obtained by Parse()
-	era      string // Obtained by Parse()
 }
 
-func NewGame(title string, scenario scenario.Scenario, era string, version string) Game {
+func NewGame(title string, scenario scenario.Scenario, era era.Era, version string) Game {
 	game := Game{Title: title, Scenario: scenario, Era: era, Version: version}
 	game.Parse()
 	return game
@@ -75,13 +74,10 @@ func NewGame(title string, scenario scenario.Scenario, era string, version strin
 func (g *Game) Parse() {
 	replacer := strings.NewReplacer("[multiplayer]", "[scenario]",
 		"[/multiplayer]", "[/scenario]")
-	g.scenario = replacer.Replace(string(Preprocess(g.Scenario.Path(), g.Scenario.Defines())))
+	g.scenario = replacer.Replace(string(wesnoth.Preprocess(g.Scenario.Path(), g.Scenario.Defines())))
 	s, _ := regexp.Compile(`(?U)\[scenario\]\n(?:[^\[\]]*\n)*\tid="(.*)"\n(?:.*\n)*\tname=_?"(.*)"\n(?:.*\n)*\[/scenario\]`)
 	g.Id = s.FindStringSubmatch(g.scenario)[1]
 	g.Name = s.FindStringSubmatch(g.scenario)[2]
-	e, _ := regexp.Compile(`(?U)\[era\]\n(?:[^\[\]]*\n)*\tid="era_` + g.Era + `"\n(?:.*\n)*\tname=_?"(.*)"\n(?:.*\n)*\[/era\]`)
-	g.era = string(e.Find(Preprocess(config.Eras, nil))) + "\n"
-	g.EraName = e.FindStringSubmatch(g.era)[1]
 }
 
 func (g Game) Bytes() []byte {
@@ -158,8 +154,8 @@ func (g *Game) multiplayerBlock() string {
 		"mp_countdown_init_time":      300,
 		"mp_countdown_reservoir_time": 300,
 		"mp_countdown_turn_bonus":     300,
-		"mp_era":                      "era_" + g.Era,
-		"mp_era_name":                 g.EraName,
+		"mp_era":                      "era_" + g.Era.Id,
+		"mp_era_name":                 g.Era.Name,
 		"mp_fog":                      true,
 		"mp_num_turns":                -1,
 		"mp_random_start_time":        false,
@@ -182,5 +178,5 @@ func (g *Game) multiplayerBlock() string {
 }
 
 func (g *Game) eraBlock() string {
-	return g.era
+	return g.Era.Body
 }

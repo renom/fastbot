@@ -29,6 +29,10 @@ import (
 	"strings"
 	"time"
 
+	e "github.com/renom/fastbot/era"
+	"github.com/renom/fastbot/game"
+	"github.com/renom/fastbot/scenario"
+	"github.com/renom/fastbot/scenario/wl_bot"
 	"github.com/renom/fastbot/types"
 	"github.com/renom/fastbot/wml"
 )
@@ -39,48 +43,57 @@ type Server struct {
 	version   string
 	username  string
 	password  string
+	era       e.Era
 	title     string
 	game      []byte
+	scenarios ScenarioList
+	lastSkip  string // player name
 	admins    types.StringList
 	players   types.StringList
 	observers types.StringList
-	factions  []wml.Data
 	timeout   time.Duration
 	err       error
 	conn      net.Conn
 	sides     SideList
+	picking   bool
 }
 
 var colors = types.StringList{"red", "blue", "green", "purple", "black", "brown", "orange", "white", "teal"}
 
 func NewServer(hostname string, port uint16, version string, username string,
-	password string, title string, game []byte, admins types.StringList, players types.StringList, timeout time.Duration) Server {
+	password string, era string, title string, scenarios []scenario.Scenario,
+	admins types.StringList, players types.StringList, timeout time.Duration) Server {
 	s := Server{
 		hostname: hostname,
 		port:     port,
 		version:  version,
 		username: username,
 		password: password,
+		era:      e.Parse(era),
 		title:    title,
-		game:     game,
 		admins:   admins,
 		players:  players,
 		timeout:  timeout,
 	}
-	s.sides = SideList{&Side{Side: 1, Color: "red"}, &Side{Side: 2, Color: "blue"}}
-
-	r, _ := regexp.Compile(`(?U)\[multiplayer_side\](.*\n)*[\t ]*\[/multiplayer_side\]`)
-	factions := r.FindAll(s.game, -1)
-	rData, _ := regexp.Compile(`(?U)[\t ]*[0-9a-z_]+[\t ]*=[\t ]*_?"[^"](.|\n)*` + `([^"]"[\t\n ]*\+[\t\n ]*_?"[^"])+` +
-		`(.|\n)*[^"]"\n`)
-	s.factions = []wml.Data{}
-	for i, v := range factions {
-		factions[i] = rData.ReplaceAll(v, []byte(""))
-		factionData := wml.ParseTag(string(factions[i])).Data
-		if !factionData.Contains("random_faction") || factionData["random_faction"] == false {
-			s.factions = append(s.factions, factionData)
-		}
+	var scenarioList ScenarioList
+	for _, v := range scenarios {
+		scenarioList = append(scenarioList, ServerScenario{false, v})
 	}
+	s.scenarios = scenarioList
+	s.sides = SideList{&Side{Side: 1, Color: "red"}, &Side{Side: 2, Color: "blue"}}
+	var path string
+	var defines []string
+	if len(scenarios) > 1 {
+		s.picking = true
+		path = wl_bot.Scenario().Path()
+		defines = append(defines[:0:0], wl_bot.Scenario().Defines()...)
+	} else {
+		s.picking = false
+		path = s.scenarios[0].Scenario.Path()
+		defines = append(defines[:0:0], s.scenarios[0].Scenario.Defines()...)
+	}
+	g := game.NewGame(s.title, scenario.FromPath(path, defines), s.era, s.version)
+	s.game = g.Bytes()
 	return s
 }
 
@@ -175,8 +188,8 @@ func (s *Server) StartGame() {
 	s.sides.Shuffle()
 	rand.Seed(time.Now().UTC().UnixNano())
 	index := rand.Int31n(6)
-	faction1 := s.factions[index]
-	faction2 := append(s.factions[:index], s.factions[index+1:]...)[rand.Int31n(5)]
+	faction1 := s.era.Factions[index]
+	faction2 := append(s.era.Factions[:index], s.era.Factions[index+1:]...)[rand.Int31n(5)]
 	data := wml.Data{"scenario_diff": wml.Data{"change_child": wml.Data{
 		"index": 0,
 		"scenario": wml.Data{"change_child": wml.Multiple{
@@ -187,7 +200,16 @@ func (s *Server) StartGame() {
 	}}
 	s.sendData(data.Bytes())
 	s.sendData(wml.EmptyTag("start_game").Bytes())
-	s.sendData(wml.EmptyTag("leave_game").Bytes())
+	//s.sendData(wml.EmptyTag("leave_game").Bytes())
+}
+
+func (s *Server) StoreNext() {
+	s.sendData(wml.EmptyTag("update_game").Bytes())
+	pickedScenario := *s.scenarios.PickedScenario()
+	game := game.NewGame(s.title, pickedScenario, s.era, s.version)
+	next_scenario := "[store_next_scenario]\n" + game.String() + "[/store_next_scenario]\n"
+	s.sendData([]byte(next_scenario))
+	s.StartGame()
 }
 
 func (s *Server) Listen() {
@@ -204,6 +226,15 @@ func (s *Server) Listen() {
 			if s.players.ContainsValue(name) && s.sides.HasSide(side) && !s.sides.HasPlayer(name) {
 				s.ChangeSide(side, "insert", wml.Data{"current_player": name, "name": name, "player_id": name})
 				s.sides.Side(side).Player = name
+				if s.picking == true && s.sides.FreeSlots() == 0 {
+					if s.scenarios.MustStart() == false {
+						s.PickingMessage()
+					} else {
+						s.Message("The picked scenario is \"" +
+							s.scenarios.PickedScenario().Name() +
+							"\", type \"ready\" to start.")
+					}
+				}
 			}
 		case data.Contains("side_drop"):
 			side_drop := data["side_drop"].(wml.Data)
@@ -315,6 +346,35 @@ func (s *Server) Listen() {
 					side := s.sides.Find(sender)
 					command := strings.Fields(text)
 					switch {
+					case s.picking == true && command[0] == "skip" && len(command) == 2:
+						if s.sides.FreeSlots() == 0 {
+							if s.lastSkip != sender {
+								scenarioNumber := types.ParseInt(command[1], -1)
+								if scenarioNumber != -1 && scenarioNumber <= len(s.scenarios) {
+									if s.scenarios[scenarioNumber-1].Skip == false {
+										s.scenarios[scenarioNumber-1].Skip = true
+										s.lastSkip = sender
+										if s.scenarios.PickedIndex() != -1 {
+											s.Message("The scenario has been chosen. \"" + s.scenarios.PickedScenario().Name() + "\" is to be played.")
+										} else {
+											s.PickingMessage()
+										}
+										if s.picking == true && s.sides.MustStart() && s.scenarios.MustStart() {
+											s.StartGame()
+											s.StoreNext()
+										}
+									} else {
+										s.Message("The chosen scenario is already skipped, choose another one.")
+									}
+								} else {
+									s.Message("Incorrect scenario number, please try again.")
+								}
+							} else {
+								s.Message("You've just skipped, please wait for your turn.")
+							}
+						} else {
+							s.Message("Please wait until all the players are joined.")
+						}
 					case command[0] == "color" && len(command) == 2 &&
 						colors.ContainsValue(command[1]) && !s.sides.HasColor(command[1]):
 						s.ChangeSide(side.Side, "insert", wml.Data{"color": command[1]})
@@ -323,8 +383,12 @@ func (s *Server) Listen() {
 						if side.Ready == false {
 							side.Ready = true
 							s.Message("Player " + side.Player + " is ready to start the game")
-							if s.sides.MustStart() {
+							if s.picking == false && s.sides.MustStart() {
 								s.StartGame()
+							}
+							if s.picking == true && s.sides.MustStart() && s.scenarios.MustStart() {
+								s.StartGame()
+								s.StoreNext()
 							}
 						}
 					case len(command) == 2 && command[0] == "not" && command[1] == "ready":
@@ -333,11 +397,15 @@ func (s *Server) Listen() {
 							s.Message("Player " + side.Player + " isn't ready to start the game")
 						}
 					case command[0] == "help" && len(command) == 1:
-						s.Message("Command list:\n" +
-							"color {red,blue,green,purple,black,brown,orange,white,teal} - set up a color\n" +
+						text := "Command list:\n"
+						if s.picking == true && s.scenarios.MustStart() == false {
+							text += "skip 1 - skip a scenario when picking\n"
+						}
+						text += "color {red,blue,green,purple,black,brown,orange,white,teal} - set up a color\n" +
 							"ready - ready to start the game\n" +
 							"not ready - decline readiness\n" +
-							"help - request command reference")
+							"help - request command reference"
+						s.Message(text)
 					}
 				}
 			}
@@ -364,6 +432,34 @@ func (s *Server) Whisper(receiver string, text string) {
 	for _, v := range SplitMessage(wml.EscapeString(text)) {
 		s.sendData((&wml.Data{"whisper": wml.Data{"sender": s.username, "receiver": receiver, "message": v}}).Bytes())
 	}
+}
+
+func (s *Server) PickingMessage() {
+	var scenarioList string
+	for i, v := range s.scenarios {
+		var name string
+		if v.Skip == false {
+			name = v.Scenario.Name()
+		} else {
+			name = "_"
+		}
+		scenarioList += strconv.Itoa(i+1) + ". " + name + "\n"
+	}
+	var allowedToChoose string
+	if s.lastSkip == "" {
+		allowedToChoose = "any side"
+	} else {
+		for _, v := range s.sides {
+			if v.Player != s.lastSkip {
+				allowedToChoose = v.Player
+				break
+			}
+		}
+	}
+	s.Message("Please choose the most unwanted map:\n" +
+		scenarioList +
+		"\nAllowed to choose: " + allowedToChoose +
+		"\nCommand: \"skip 1\" (change \"1\" with an actual scenario number)")
 }
 
 func (s *Server) Error() error {

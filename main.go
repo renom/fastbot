@@ -22,7 +22,6 @@ import (
 	"sync"
 
 	"github.com/renom/fastbot/config"
-	"github.com/renom/fastbot/game"
 	"github.com/renom/fastbot/scenario"
 	"github.com/renom/fastbot/server"
 )
@@ -32,10 +31,13 @@ func main() {
 
 	var wg sync.WaitGroup
 	for i, v := range config.Games {
-		game := game.NewGame(config.Title, scenario.FromPath(v.Scenario, v.Defines), config.Era, config.Version)
 		t := config.Title
 		for j, w := range v.Players {
 			t = strings.ReplaceAll(t, "{Player"+strconv.Itoa(j+1)+"}", w)
+		}
+		var scenarios []scenario.Scenario
+		for _, x := range v.Scenarios {
+			scenarios = append(scenarios, scenario.FromPath(x.Path, x.Defines))
 		}
 		srv := server.NewServer(
 			config.Hostname,
@@ -43,8 +45,9 @@ func main() {
 			config.Version,
 			config.Accounts[i].Username,
 			config.Accounts[i].Password,
+			config.Era,
 			t,
-			game.Bytes(),
+			scenarios,
 			config.Admins,
 			v.Players,
 			config.Timeout)

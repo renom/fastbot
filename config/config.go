@@ -38,8 +38,7 @@ var (
 	BaseDir         = ""
 	Games           = []GameConfig{}
 	// Not need to be accessed from the outside
-	scenario = "/usr/share/wesnoth/data/multiplayer/scenarios/2p_Den_of_Onis.cfg"
-	defines  = []string{}
+	scenarios = []ScenarioConfig{ScenarioConfig{Path: "/usr/share/wesnoth/data/multiplayer/scenarios/2p_Den_of_Onis.cfg"}}
 
 	// Game distro related confs and timeouts (accessed from the outside)
 	Wesnoth = "/usr/bin/wesnoth"
@@ -50,9 +49,13 @@ var (
 )
 
 type GameConfig struct {
-	Players  []string
-	Scenario string
-	Defines  []string
+	Players   []string
+	Scenarios []ScenarioConfig
+}
+
+type ScenarioConfig struct {
+	Path    string
+	Defines []string
 }
 
 func LoadFromArgs() {
@@ -78,9 +81,15 @@ func LoadFromArgs() {
 	}
 	if *scenarioString != "" {
 		s := strings.Split(*scenarioString, ":")
-		scenario = s[0]
+		var d []string
 		if len(s) > 1 {
-			defines = strings.Split(s[1], ",")
+			d = strings.Split(s[1], ",")
+		}
+		for _, value := range strings.Split(s[0], ",") {
+			if BaseDir != "" {
+				value = filepath.Clean(BaseDir + "/" + value)
+			}
+			scenarios = append(scenarios, ScenarioConfig{value, d})
 		}
 	}
 	if *accountsString != "" {
@@ -98,22 +107,22 @@ func LoadFromArgs() {
 		fields := strings.Split(v, ":")
 		if len(fields) > 0 {
 			p := strings.Split(fields[0], ",")
-			var s string
 			var d []string // defines
-			if len(fields) > 1 {
-				s = fields[1]
-			} else {
-				s = scenario
-			}
 			if len(fields) > 2 {
 				d = strings.Split(fields[2], ",")
+			}
+			var s []ScenarioConfig
+			if len(fields) > 1 {
+				for _, value := range strings.Split(fields[1], ",") {
+					if BaseDir != "" {
+						value = filepath.Clean(BaseDir + "/" + value)
+					}
+					s = append(s, ScenarioConfig{value, d})
+				}
 			} else {
-				d = defines
+				s = append(s[:0:0], scenarios...)
 			}
-			if BaseDir != "" {
-				s = filepath.Clean(BaseDir + "/" + s)
-			}
-			Games = append(Games, GameConfig{p, s, d})
+			Games = append(Games, GameConfig{p, s})
 		}
 	}
 }

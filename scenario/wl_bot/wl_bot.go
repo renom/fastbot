@@ -13,11 +13,17 @@
 // You should have received a copy of the GNU General Public License
 // along with Fastbot.  If not, see <https://www.gnu.org/licenses/>.
 
-package default
+package wl_bot
 
-const Default = Scenario{
-	name: "WL Bot",
-	body: `[multiplayer]
+import s "github.com/renom/fastbot/scenario"
+
+func Scenario() *s.Scenario {
+	return &scenario
+}
+
+var scenario = s.NewScenario(
+	"WL Bot",
+	`[multiplayer]
 	id="WL_Bot"
 	map_data="border_size=1
 usage=map
@@ -88,4 +94,5 @@ Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, 
 	[/event]
 [/multiplayer]
 `,
-}
+	[]string{},
+)

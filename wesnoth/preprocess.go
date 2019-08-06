@@ -13,24 +13,33 @@
 // You should have received a copy of the GNU General Public License
 // along with Fastbot.  If not, see <https://www.gnu.org/licenses/>.
 
-package game
+package wesnoth
 
 import (
-	"fmt"
-	"math/rand"
-	"regexp"
-	"time"
+	"io/ioutil"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 
-	"github.com/renom/fastbot/wml"
+	"github.com/renom/fastbot/config"
 )
 
-func replaceSide(scenario string, side wml.Tag, indent uint) string {
-	r, _ := regexp.Compile(`(?U)[\t ]*\[side\]\n([^\[\]]*\n)*[\t ]*side=` + string(side.Data["side"].(int)) + `\n(.*\n)*[\t ]*\[/side\]\n`)
-	return r.ReplaceAllString(scenario, side.Indent(indent))
-}
+var output = config.TmpDir + "/output"
 
-func randomSeed() string {
-	rand.Seed(time.Now().UTC().UnixNano())
-	seed := fmt.Sprintf("%x", rand.Int63n(4294967295+1))
-	return seed
+func Preprocess(filePath string, defines []string) []byte {
+	defines = append(defines, "MULTIPLAYER")
+	if _, err := os.Stat(output); os.IsNotExist(err) {
+		os.MkdirAll(output, 0755)
+	}
+	cmd := exec.Command(
+		config.Wesnoth,
+		"-p",
+		filePath,
+		output,
+		"--preprocess-defines="+strings.Join(defines, ","),
+	)
+	cmd.Run()
+	result, _ := ioutil.ReadFile(output + "/" + filepath.Base(filePath))
+	return result
 }

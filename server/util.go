@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/renom/fastbot/config"
-	"github.com/renom/fastbot/game"
+	"github.com/renom/fastbot/wesnoth"
 	"github.com/renom/fastbot/wml"
 )
 
@@ -71,7 +71,7 @@ func insertFaction(side *Side, faction wml.Data, textdomain string) wml.Data {
 		`[\t ]*id="` + leader + `"\n`)
 
 	var gender string
-	if subString := r.FindSubmatch(game.Preprocess(config.Units, nil)); len(subString) == 2 {
+	if subString := r.FindSubmatch(wesnoth.Preprocess(config.Units, nil)); len(subString) == 2 {
 		gender = string(subString[1])
 		if genders := strings.Split(gender, ","); len(genders) == 2 {
 			rand.Seed(time.Now().UTC().UnixNano())
@@ -85,7 +85,6 @@ func insertFaction(side *Side, faction wml.Data, textdomain string) wml.Data {
 		"color":          side.Color,
 		"current_player": side.Player,
 		"faction":        faction["id"],
-		"faction_name":   wml.Domain{faction["name"], textdomain},
 		"gender":         gender,
 		"is_host":        false,
 		"is_local":       false,
@@ -100,6 +99,11 @@ func insertFaction(side *Side, faction wml.Data, textdomain string) wml.Data {
 	},
 		"delete":       wml.Data{"random_faction": "x"},
 		"insert_child": wml.Data{"index": 1, "ai": faction["ai"]},
+	}
+	if textdomain != "" {
+		sideData["insert"].(wml.Data)["faction_name"] = wml.Domain{faction["name"], textdomain}
+	} else {
+		sideData["insert"].(wml.Data)["faction_name"] = faction["name"]
 	}
 	if faction.Contains("random_leader") {
 		sideData["insert"].(wml.Data)["random_leader"] = faction["random_leader"]
