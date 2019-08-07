@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Fastbot.  If not, see <https://www.gnu.org/licenses/>.
 
-package wl_bot
+package picker
 
 import s "github.com/renom/fastbot/scenario"
 
@@ -22,9 +22,9 @@ func Scenario() *s.Scenario {
 }
 
 var scenario = s.NewScenario(
-	"WL Bot",
+	"Fast Bot",
 	`[multiplayer]
-	id="WL_Bot"
+	id="Fast_Bot"
 	map_data="border_size=1
 usage=map
 
@@ -55,7 +55,7 @@ Xv, Xv, Xv, Xv, Xv, Wot, Wot, Wog, Wog, Wog, Wog, Wog, Wog, Wog, Wog, Wog, Wog, 
 Xv, Xv, Xv, Xv, Xv, Xv, Xv, Wot, Wot, Wot, Wot, Wot, Wot, Wot, Wot, Wot, Wot, Wot, Wot, Wot, Wot, Wot, Wot, Wot, Wot, Wot, Wot, Wot, Wot, Wot, Wot, Wot, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv
 Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv, Xv
 "
-	name=_"WL Bot"
+	name=_"Fast Bot"
 	random_start_time=no
 	[side]
 		canrecruit=yes

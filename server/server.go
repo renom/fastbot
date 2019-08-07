@@ -32,7 +32,7 @@ import (
 	e "github.com/renom/fastbot/era"
 	"github.com/renom/fastbot/game"
 	"github.com/renom/fastbot/scenario"
-	"github.com/renom/fastbot/scenario/wl_bot"
+	"github.com/renom/fastbot/scenario/picker"
 	"github.com/renom/fastbot/types"
 	"github.com/renom/fastbot/wml"
 )
@@ -85,8 +85,8 @@ func NewServer(hostname string, port uint16, version string, username string,
 	var defines []string
 	if len(scenarios) > 1 {
 		s.picking = true
-		path = wl_bot.Scenario().Path()
-		defines = append(defines[:0:0], wl_bot.Scenario().Defines()...)
+		path = picker.Scenario().Path()
+		defines = append(defines[:0:0], picker.Scenario().Defines()...)
 	} else {
 		s.picking = false
 		path = s.scenarios[0].Scenario.Path()
