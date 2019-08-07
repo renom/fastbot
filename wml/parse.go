@@ -35,9 +35,9 @@ func ParseTag(text string) Tag {
 
 func ParseData(text string) Data {
 	r, _ := regexp.Compile(`^` + `((?:` + `(?:[\t ]*#textdomain [0-9a-z_-]+\n)?` +
-		`[\t ]*[0-9a-z_]+[\t ]*=.+(?:\n|$)` + `)*)` +
+		`[\t ]*[0-9a-z_]+[\t ]*=(?:(?:"(?:.|\n)*?(?:[^"]|\n)")|(?:[^"].*))(?:\n|$)` + `)*)` +
 		`((?:` + `(?:[\t ]*#textdomain [0-9a-z_-]+\n)?` +
-		`[\t ]*\[[0-9a-z_]+\]\n` + `(?:.+\n)*` + `[\t ]*\[/[0-9a-z_]+\](?:\n|$)` + `)*)`)
+		`[\t ]*\[[0-9a-z_]+\]\n` + `(?:.*\n)*` + `[\t ]*\[/[0-9a-z_]+\](?:\n|$)` + `)*)`)
 
 	submatches := r.FindStringSubmatch(text)
 	submatches = append(submatches, make([]string, 3-len(submatches))...)
@@ -46,7 +46,10 @@ func ParseData(text string) Data {
 }
 
 func parseAttributes(text string) Data {
-	r, _ := regexp.Compile(`(?:[\t ]*#textdomain ([0-9a-z_-]+)\n)?` + `[\t ]*([0-9a-z_]+)[\t ]*=[\t ]*(_?)[\t ]*("?)(.*?)"?[\t ]*(?:\n|$)`)
+	r, _ := regexp.Compile(`(?:[\t ]*#textdomain ([0-9a-z_-]+)\n)?` +
+		`[\t ]*([0-9a-z_]+)[\t ]*=[\t ]*(_?)[\t ]*` +
+		`(?:(?:(")((?:.|\n)*?(?:[^"]|\n))")|([^"].*?))` +
+		`[\t ]*(?:\n|$)`)
 
 	data := make(Data)
 	float, _ := regexp.Compile(`^\d+\.\d+$`)
@@ -58,16 +61,16 @@ func parseAttributes(text string) Data {
 			value = v[5]
 		case v[3] == "_" && v[4] == "\"":
 			value = Tr(v[5])
-		case v[4] == "" && v[5] == "yes":
+		case v[4] == "" && v[6] == "yes":
 			value = true
-		case v[4] == "" && v[5] == "no":
+		case v[4] == "" && v[6] == "no":
 			value = false
-		case v[4] == "" && integer.MatchString(v[5]):
-			value, _ = strconv.Atoi(v[5])
-		case v[4] == "" && float.MatchString(v[5]):
-			value, _ = strconv.ParseFloat(v[5], 64)
+		case v[4] == "" && integer.MatchString(v[6]):
+			value, _ = strconv.Atoi(v[6])
+		case v[4] == "" && float.MatchString(v[6]):
+			value, _ = strconv.ParseFloat(v[6], 64)
 		default:
-			value = Raw(v[5])
+			value = Raw(v[6])
 		}
 		if v[1] == "" {
 			data[v[2]] = value
@@ -84,7 +87,7 @@ func parseTags(text string) Data {
 	submatches := i.FindStringSubmatch(text)
 	indent := append(submatches, make([]string, 2-len(submatches))...)[1]
 	text = strings.ReplaceAll(strings.Replace(text, indent, "", 1), "\n"+indent, "\n")
-	r, _ := regexp.Compile(`(?U)` + `(?:[\t ]*#textdomain ([0-9a-z_-]+)\n)?` + `\[([0-9a-z_]+)\]\n` + `((?:.+\n)*)` + `\[/[0-9a-z_]+\]`)
+	r, _ := regexp.Compile(`(?U)` + `(?:[\t ]*#textdomain ([0-9a-z_-]+)\n)?` + `\[([0-9a-z_]+)\]\n` + `((?:.*\n)*)` + `\[/[0-9a-z_]+\]`)
 
 	data := make(Data)
 	for _, v := range r.FindAllStringSubmatch(text, -1) {

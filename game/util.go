@@ -19,13 +19,24 @@ import (
 	"fmt"
 	"math/rand"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/renom/fastbot/wml"
 )
 
+func sideTag(data wml.Data, color string, player string) wml.Tag {
+	side := wml.Data{"color": color}
+	if player != "" {
+		side["current_player"] = player
+		side["name"] = player
+		side["player_id"] = player
+	}
+	return wml.Tag{"side", wml.MergeData(data, side)}
+}
+
 func replaceSide(scenario string, side wml.Tag, indent uint) string {
-	r, _ := regexp.Compile(`(?U)[\t ]*\[side\]\n([^\[\]]*\n)*[\t ]*side=` + string(side.Data["side"].(int)) + `\n(.*\n)*[\t ]*\[/side\]\n`)
+	r, _ := regexp.Compile(`(?U)[\t ]*\[side\]\n([^\[\]]*\n)*[\t ]*side=` + strconv.Itoa(side.Data["side"].(int)) + `\n(.*\n)*[\t ]*\[/side\]\n`)
 	return r.ReplaceAllString(scenario, side.Indent(indent))
 }
 

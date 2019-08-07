@@ -207,6 +207,9 @@ func (s *Server) StoreNext() {
 	s.sendData(wml.EmptyTag("update_game").Bytes())
 	pickedScenario := *s.scenarios.PickedScenario()
 	game := game.NewGame(s.title, pickedScenario, s.era, s.version)
+	game.NotNewGame = true
+	game.Player1 = s.sides.Side(1).Player
+	game.Player2 = s.sides.Side(2).Player
 	next_scenario := "[store_next_scenario]\n" + game.String() + "[/store_next_scenario]\n"
 	s.sendData([]byte(next_scenario))
 	s.StartGame()

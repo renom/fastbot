@@ -16,9 +16,11 @@
 package game
 
 import (
+	"io/ioutil"
 	"regexp"
 	"strings"
 
+	"github.com/renom/fastbot/config"
 	"github.com/renom/fastbot/era"
 	"github.com/renom/fastbot/scenario"
 	"github.com/renom/fastbot/wesnoth"
@@ -28,6 +30,7 @@ import (
 var (
 	sideData = wml.Data{
 		"allow_changes":   true,
+		"allow_player":    true,
 		"chose_random":    false,
 		"faction":         "Random",
 		"faction_name":    wml.Domain{wml.Tr("Random"), "wesnoth-multiplayer"},
@@ -56,13 +59,16 @@ var (
 )
 
 type Game struct {
-	Title    string
-	Scenario scenario.Scenario
-	Era      era.Era
-	Version  string
-	Id       string // Obtained by Parse()
-	Name     string // Obtained by Parse()
-	scenario string // Obtained by Parse()
+	Title      string
+	Scenario   scenario.Scenario
+	Era        era.Era
+	Version    string
+	NotNewGame bool   // To set up manually
+	Player1    string // To set up manually
+	Player2    string // To set up manually
+	Id         string // Obtained by Parse()
+	Name       string // Obtained by Parse()
+	scenario   string // Obtained by Parse()
 }
 
 func NewGame(title string, scenario scenario.Scenario, era era.Era, version string) Game {
@@ -123,10 +129,20 @@ func (g *Game) scenarioBlock() string {
 	indent := uint(strings.Count(r.FindStringSubmatch(g.scenario)[1], "\t"))
 
 	scenario := g.scenario
-	scenario = replaceSide(scenario, wml.Tag{"side", wml.MergeData(sideData,
-		wml.ParseTag(sides[0]).Data, wml.Data{"color": "red"})}, indent)
-	scenario = replaceSide(scenario, wml.Tag{"side", wml.MergeData(sideData,
-		wml.ParseTag(sides[1]).Data, wml.Data{"color": "blue"})}, indent)
+	scenario = replaceSide(scenario, sideTag(wml.MergeData(sideData, wml.ParseTag(sides[0]).Data), "red", g.Player1), indent)
+	scenario = replaceSide(scenario, sideTag(wml.MergeData(sideData, wml.ParseTag(sides[1]).Data), "blue", g.Player2), indent)
+	r_attributes, _ := regexp.Compile(`(?sU)^(\[scenario\]\n)(.*\n)([\t ]*\[/?[0-9a-z_]+\])`)
+	matches := r_attributes.FindStringSubmatch(scenario)
+	attributes := wml.ParseData(matches[2])
+	if g.NotNewGame == true {
+		attributes["allow_new_game"] = false
+		attributes["disallow_recall"] = true
+	}
+	attributes["experience_modifier"] = 70
+	attributes["has_mod_events"] = true
+	attributes["objectives"] = "<big>Victory:</big>\n<span color='#00ff00'>• Defeat enemy leader(s)</span>"
+	attributes["turns"] = -1
+	scenario = r_attributes.ReplaceAllString(scenario, matches[1]+attributes.Indent(1)+matches[3])
 
 	return scenario
 }
