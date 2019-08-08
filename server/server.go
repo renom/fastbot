@@ -264,6 +264,8 @@ func (s *Server) Listen() {
 							"\". Type \"ready\" to start.")
 					}
 				}
+			} else if name != s.username && !s.observers.ContainsValue(name) {
+				s.observers = append(s.observers, name)
 			}
 		case data.Contains("side_drop"):
 			side_drop := data["side_drop"].(wml.Data)
@@ -337,6 +339,16 @@ func (s *Server) Listen() {
 						if s.sides.HasSide(side) && s.observers.ContainsValue(observer) {
 							s.ChangeSide(side, "insert", wml.Data{"is_host": false, "is_local": false, "current_player": observer, "name": observer, "player_id": observer})
 							s.sides.Side(side).Player = observer
+							if s.picking == true && s.sides.FreeSlots() == 0 {
+								if s.scenarios.MustStart() == false {
+									s.PickingMessage()
+								} else {
+									s.Message("The picked scenario is \"" +
+										s.scenarios.PickedScenario().Name() +
+										"\". Type \"ready\" to start.")
+								}
+							}
+
 						}
 						// Need to have an observers list
 					case command[0] == "drop" && len(command) == 2:
