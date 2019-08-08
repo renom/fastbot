@@ -17,7 +17,7 @@ go install
 ## Usage
 
 ```
-fastbot -host example.com -admins admin1,admin2,admin3 -accounts nickname1[:password1],nickname2[:password2],...,nicknameN[:passwordN] -title "{Player1} vs {Player2}" -baseDir /usr/share/wesnoth/data/multiplayer/scenarios player1,player2:2p_Clearing_Gushes.cfg,2p_The_Freelands.cfg,2p_Elensefar_Courtyard.cfg,2p_Sablestone_Delta.cfg,2p_Den_of_Onis.cfg player3,player4:2p_Caves_of_the_Basilisk.cfg
+fastbot -host example.com -admins admin1,admin2,admin3 -accounts nickname1[:password1],nickname2[:password2],...,nicknameN[:passwordN] -title "{Player1} vs {Player2}" -timer 270,270,270,0 -baseDir /usr/share/wesnoth/data/multiplayer/scenarios player1,player2:2p_Clearing_Gushes.cfg,2p_The_Freelands.cfg,2p_Elensefar_Courtyard.cfg,2p_Sablestone_Delta.cfg,2p_Den_of_Onis.cfg player3,player4:2p_Caves_of_the_Basilisk.cfg
 ```
 
 ## License

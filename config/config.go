@@ -34,6 +34,7 @@ var (
 	Accounts        = AccountList{Guest("wl_bot_1"), Guest("wl_bot_2")}
 	Era             = "default"
 	Title           = "Game 1"
+	Timer           = TimerConfig{false, 300, 300, 300, 0}
 	Admins          = types.StringList{}
 	BaseDir         = ""
 	Games           = []GameConfig{}
@@ -58,6 +59,14 @@ type ScenarioConfig struct {
 	Defines []string
 }
 
+type TimerConfig struct {
+	Enabled       bool
+	InitTime      int
+	TurnBonus     int
+	ReservoirTime int
+	ActionBonus   int
+}
+
 func LoadFromArgs() {
 	// String parameters
 	flag.StringVar(&Hostname, "host", Hostname, "The server domain or IP address")
@@ -71,6 +80,7 @@ func LoadFromArgs() {
 	flag.StringVar(&TmpDir, "tmpDir", TmpDir, "The path to the tmp folder")
 	// Parameters that require extra check
 	portUint := flag.Uint("port", uint(Port), "The port")
+	timerString := flag.String("timer", "", "The timer values, comma-separated sequence: init_time,turn_bonus,reservoir_time,action_bonus")
 	scenarioString := flag.String("scenarios", "", "The default scenario")
 	accountsString := flag.String("accounts", "", "The bot accounts")
 	adminsString := flag.String("admins", "", "The admin usernames")
@@ -78,6 +88,23 @@ func LoadFromArgs() {
 	// Extra check
 	if 0 < int(*portUint) && int(*portUint) <= 65535 {
 		Port = uint16(*portUint)
+	}
+	if *adminsString != "" {
+		timer := strings.Split(*timerString, ",")
+		if len(timer) == 4 {
+			var initTime, turnBonus, reservoirTime, actionBonus int
+			initTime = types.ParseInt(timer[0], -1)
+			turnBonus = types.ParseInt(timer[1], -1)
+			reservoirTime = types.ParseInt(timer[2], -1)
+			actionBonus = types.ParseInt(timer[3], -1)
+			if initTime != -1 && turnBonus != -1 && reservoirTime != -1 && actionBonus != -1 {
+				Timer.Enabled = true
+				Timer.InitTime = initTime
+				Timer.TurnBonus = turnBonus
+				Timer.ReservoirTime = reservoirTime
+				Timer.ActionBonus = actionBonus
+			}
+		}
 	}
 	if *scenarioString != "" {
 		s := strings.Split(*scenarioString, ":")

@@ -67,10 +67,20 @@ type Game struct {
 	Id         string // Obtained by Parse()
 	Name       string // Obtained by Parse()
 	scenario   string // Obtained by Parse()
+	// Timer-related config
+	TimerEnabled  bool
+	InitTime      int
+	TurnBonus     int
+	ReservoirTime int
+	ActionBonus   int
 }
 
-func NewGame(title string, scenario scenario.Scenario, era era.Era, version string) Game {
-	game := Game{Title: title, Scenario: scenario, Era: era, Version: version}
+func NewGame(title string, scenario scenario.Scenario, era era.Era,
+	timerEnabled bool, initTime int, turnBonus int, reservoirTime int,
+	actionBonus int, version string) Game {
+	game := Game{Title: title, Scenario: scenario, Era: era, Version: version,
+		TimerEnabled: timerEnabled, InitTime: initTime, TurnBonus: turnBonus,
+		ReservoirTime: reservoirTime, ActionBonus: actionBonus}
 	game.Parse()
 	return game
 }
@@ -163,11 +173,11 @@ func (g *Game) multiplayerBlock() string {
 		"hash":                        "",
 		"mp_campaign":                 "",
 		"mp_campaign_name":            "",
-		"mp_countdown":                false,
-		"mp_countdown_action_bonus":   0,
-		"mp_countdown_init_time":      300,
-		"mp_countdown_reservoir_time": 300,
-		"mp_countdown_turn_bonus":     300,
+		"mp_countdown":                g.TimerEnabled,
+		"mp_countdown_action_bonus":   g.ActionBonus,
+		"mp_countdown_init_time":      g.InitTime,
+		"mp_countdown_reservoir_time": g.ReservoirTime,
+		"mp_countdown_turn_bonus":     g.TurnBonus,
 		"mp_era":                      "era_" + g.Era.Id,
 		"mp_era_name":                 g.Era.Name,
 		"mp_fog":                      true,

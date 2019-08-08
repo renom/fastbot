@@ -56,24 +56,37 @@ type Server struct {
 	conn      net.Conn
 	sides     SideList
 	picking   bool
+	// Timer-related config
+	TimerEnabled  bool
+	InitTime      int
+	TurnBonus     int
+	ReservoirTime int
+	ActionBonus   int
 }
 
 var colors = types.StringList{"red", "blue", "green", "purple", "black", "brown", "orange", "white", "teal"}
 
 func NewServer(hostname string, port uint16, version string, username string,
 	password string, era string, title string, scenarios []scenario.Scenario,
-	admins types.StringList, players types.StringList, timeout time.Duration) Server {
+	admins types.StringList, players types.StringList, timerEnabled bool,
+	initTime int, turnBonus int, reservoirTime int, actionBonus int,
+	timeout time.Duration) Server {
 	s := Server{
-		hostname: hostname,
-		port:     port,
-		version:  version,
-		username: username,
-		password: password,
-		era:      e.Parse(era),
-		title:    title,
-		admins:   admins,
-		players:  players,
-		timeout:  timeout,
+		hostname:      hostname,
+		port:          port,
+		version:       version,
+		username:      username,
+		password:      password,
+		era:           e.Parse(era),
+		title:         title,
+		admins:        admins,
+		players:       players,
+		timeout:       timeout,
+		TimerEnabled:  timerEnabled,
+		InitTime:      initTime,
+		TurnBonus:     turnBonus,
+		ReservoirTime: reservoirTime,
+		ActionBonus:   actionBonus,
 	}
 	var scenarioList ScenarioList
 	for _, v := range scenarios {
@@ -92,7 +105,9 @@ func NewServer(hostname string, port uint16, version string, username string,
 		path = s.scenarios[0].Scenario.Path()
 		defines = append(defines[:0:0], s.scenarios[0].Scenario.Defines()...)
 	}
-	g := game.NewGame(s.title, scenario.FromPath(path, defines), s.era, s.version)
+	g := game.NewGame(s.title, scenario.FromPath(path, defines), s.era,
+		s.TimerEnabled, s.InitTime, s.TurnBonus, s.ReservoirTime, s.ActionBonus,
+		s.version)
 	s.game = g.Bytes()
 	return s
 }
@@ -206,7 +221,9 @@ func (s *Server) StartGame() {
 func (s *Server) StoreNext() {
 	s.sendData(wml.EmptyTag("update_game").Bytes())
 	pickedScenario := *s.scenarios.PickedScenario()
-	game := game.NewGame(s.title, pickedScenario, s.era, s.version)
+	game := game.NewGame(s.title, pickedScenario, s.era,
+		s.TimerEnabled, s.InitTime, s.TurnBonus, s.ReservoirTime, s.ActionBonus,
+		s.version)
 	game.NotNewGame = true
 	game.Player1 = s.sides.Side(1).Player
 	game.Player2 = s.sides.Side(2).Player

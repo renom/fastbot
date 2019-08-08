@@ -50,6 +50,11 @@ func main() {
 			scenarios,
 			config.Admins,
 			v.Players,
+			config.Timer.Enabled,
+			config.Timer.InitTime,
+			config.Timer.TurnBonus,
+			config.Timer.ReservoirTime,
+			config.Timer.ActionBonus,
 			config.Timeout)
 		wg.Add(1)
 		go func() {
