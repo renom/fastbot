@@ -215,7 +215,6 @@ func (s *Server) StartGame() {
 	}}
 	s.sendData(data.Bytes())
 	s.sendData(wml.EmptyTag("start_game").Bytes())
-	//s.sendData(wml.EmptyTag("leave_game").Bytes())
 }
 
 func (s *Server) StoreNext() {
@@ -234,6 +233,10 @@ func (s *Server) StoreNext() {
 
 func (s *Server) MuteAll() {
 	s.sendData(wml.EmptyTag("muteall").Bytes())
+}
+
+func (s *Server) LeaveGame() {
+	s.sendData(wml.EmptyTag("leave_game").Bytes())
 }
 
 func (s *Server) Listen() {
@@ -387,6 +390,7 @@ func (s *Server) Listen() {
 											s.StartGame()
 											s.StoreNext()
 											s.MuteAll()
+											s.LeaveGame()
 										}
 									} else {
 										s.Message("The chosen scenario is already skipped, choose another one.")
@@ -411,11 +415,13 @@ func (s *Server) Listen() {
 							if s.picking == false && s.sides.MustStart() {
 								s.StartGame()
 								s.MuteAll()
+								s.LeaveGame()
 							}
 							if s.picking == true && s.sides.MustStart() && s.scenarios.MustStart() {
 								s.StartGame()
 								s.StoreNext()
 								s.MuteAll()
+								s.LeaveGame()
 							}
 						}
 					case len(command) == 2 && command[0] == "not" && command[1] == "ready":
