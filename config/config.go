@@ -71,7 +71,7 @@ func LoadFromArgs() {
 	flag.StringVar(&TmpDir, "tmpDir", TmpDir, "The path to the tmp folder")
 	// Parameters that require extra check
 	portUint := flag.Uint("port", uint(Port), "The port")
-	scenarioString := flag.String("scenario", "", "The default scenario")
+	scenarioString := flag.String("scenarios", "", "The default scenario")
 	accountsString := flag.String("accounts", "", "The bot accounts")
 	adminsString := flag.String("admins", "", "The admin usernames")
 	flag.Parse()
@@ -85,6 +85,7 @@ func LoadFromArgs() {
 		if len(s) > 1 {
 			d = strings.Split(s[1], ",")
 		}
+		scenarios = []ScenarioConfig{}
 		for _, value := range strings.Split(s[0], ",") {
 			if BaseDir != "" {
 				value = filepath.Clean(BaseDir + "/" + value)

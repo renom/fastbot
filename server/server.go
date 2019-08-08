@@ -235,7 +235,7 @@ func (s *Server) Listen() {
 					} else {
 						s.Message("The picked scenario is \"" +
 							s.scenarios.PickedScenario().Name() +
-							"\", type \"ready\" to start.")
+							"\". Type \"ready\" to start.")
 					}
 				}
 			}

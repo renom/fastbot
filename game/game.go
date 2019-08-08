@@ -16,11 +16,9 @@
 package game
 
 import (
-	"io/ioutil"
 	"regexp"
 	"strings"
 
-	"github.com/renom/fastbot/config"
 	"github.com/renom/fastbot/era"
 	"github.com/renom/fastbot/scenario"
 	"github.com/renom/fastbot/wesnoth"
