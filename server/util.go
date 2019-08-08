@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/renom/fastbot/config"
+	serverTypes "github.com/renom/fastbot/server/types"
 	"github.com/renom/fastbot/wesnoth"
 	"github.com/renom/fastbot/wml"
 )
@@ -55,7 +56,7 @@ func SplitMessage(text string) []string {
 	return result
 }
 
-func insertFaction(side *Side, faction wml.Data, textdomain string) wml.Data {
+func insertFaction(side *serverTypes.Side, faction wml.Data, textdomain string) wml.Data {
 	var leaders = []string{}
 	if faction.Contains("random_leader") {
 		leaders = strings.Split(faction["random_leader"].(string), ",")

@@ -33,6 +33,7 @@ import (
 	"github.com/renom/fastbot/game"
 	"github.com/renom/fastbot/scenario"
 	"github.com/renom/fastbot/scenario/picker"
+	serverTypes "github.com/renom/fastbot/server/types"
 	"github.com/renom/fastbot/types"
 	"github.com/renom/fastbot/wml"
 )
@@ -46,7 +47,7 @@ type Server struct {
 	era           e.Era
 	title         string
 	game          []byte
-	scenarios     ScenarioList
+	scenarios     serverTypes.ScenarioList
 	lastSkip      string // player name
 	admins        types.StringList
 	players       types.StringList
@@ -54,7 +55,7 @@ type Server struct {
 	timeout       time.Duration
 	err           error
 	conn          net.Conn
-	sides         SideList
+	sides         serverTypes.SideList
 	picking       bool
 	pickingPlayer string
 	// Timer-related config
@@ -90,12 +91,12 @@ func NewServer(hostname string, port uint16, version string, username string,
 		ReservoirTime: reservoirTime,
 		ActionBonus:   actionBonus,
 	}
-	var scenarioList ScenarioList
+	var scenarioList serverTypes.ScenarioList
 	for _, v := range scenarios {
-		scenarioList = append(scenarioList, ServerScenario{false, v})
+		scenarioList = append(scenarioList, serverTypes.Scenario{false, v})
 	}
 	s.scenarios = scenarioList
-	s.sides = SideList{&Side{Side: 1, Color: "red"}, &Side{Side: 2, Color: "blue"}}
+	s.sides = serverTypes.SideList{&serverTypes.Side{Side: 1, Color: "red"}, &serverTypes.Side{Side: 2, Color: "blue"}}
 	var path string
 	var defines []string
 	if len(scenarios) > 1 {

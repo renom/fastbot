@@ -13,16 +13,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Fastbot.  If not, see <https://www.gnu.org/licenses/>.
 
-package server
+package types
 
 import sc "github.com/renom/fastbot/scenario"
 
-type ServerScenario struct {
+type Scenario struct {
 	Skip     bool
 	Scenario sc.Scenario
 }
 
-type ScenarioList []ServerScenario
+type ScenarioList []Scenario
 
 func (s *ScenarioList) PickedScenario() *sc.Scenario {
 	if s.MustStart() == true {
