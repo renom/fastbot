@@ -50,6 +50,7 @@ func main() {
 			scenarios,
 			config.Admins,
 			v.Players,
+			v.PickingPlayer,
 			config.Timer.Enabled,
 			config.Timer.InitTime,
 			config.Timer.TurnBonus,

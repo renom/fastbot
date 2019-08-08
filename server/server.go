@@ -38,24 +38,25 @@ import (
 )
 
 type Server struct {
-	hostname  string
-	port      uint16
-	version   string
-	username  string
-	password  string
-	era       e.Era
-	title     string
-	game      []byte
-	scenarios ScenarioList
-	lastSkip  string // player name
-	admins    types.StringList
-	players   types.StringList
-	observers types.StringList
-	timeout   time.Duration
-	err       error
-	conn      net.Conn
-	sides     SideList
-	picking   bool
+	hostname      string
+	port          uint16
+	version       string
+	username      string
+	password      string
+	era           e.Era
+	title         string
+	game          []byte
+	scenarios     ScenarioList
+	lastSkip      string // player name
+	admins        types.StringList
+	players       types.StringList
+	observers     types.StringList
+	timeout       time.Duration
+	err           error
+	conn          net.Conn
+	sides         SideList
+	picking       bool
+	pickingPlayer string
 	// Timer-related config
 	TimerEnabled  bool
 	InitTime      int
@@ -68,7 +69,7 @@ var colors = types.StringList{"red", "blue", "green", "purple", "black", "brown"
 
 func NewServer(hostname string, port uint16, version string, username string,
 	password string, era string, title string, scenarios []scenario.Scenario,
-	admins types.StringList, players types.StringList, timerEnabled bool,
+	admins types.StringList, players types.StringList, pickingPlayer string, timerEnabled bool,
 	initTime int, turnBonus int, reservoirTime int, actionBonus int,
 	timeout time.Duration) Server {
 	s := Server{
@@ -81,6 +82,7 @@ func NewServer(hostname string, port uint16, version string, username string,
 		title:         title,
 		admins:        admins,
 		players:       players,
+		pickingPlayer: pickingPlayer,
 		timeout:       timeout,
 		TimerEnabled:  timerEnabled,
 		InitTime:      initTime,
@@ -373,7 +375,29 @@ func (s *Server) Listen() {
 					side := s.sides.Find(sender)
 					command := strings.Fields(text)
 					switch {
-					case s.picking == true && command[0] == "skip" && len(command) == 2:
+					case s.picking == true && s.pickingPlayer != "" && command[0] == "pick" && len(command) == 2:
+						if sender == s.pickingPlayer {
+							scenarioNumber := types.ParseInt(command[1], -1)
+							if scenarioNumber != -1 && scenarioNumber <= len(s.scenarios) {
+								for i := range s.scenarios {
+									if i != scenarioNumber-1 {
+										s.scenarios[i].Skip = true
+									}
+								}
+								s.Message("The scenario has been chosen. \"" + s.scenarios.PickedScenario().Name() + "\" is to be played.")
+								if s.sides.MustStart() {
+									s.StartGame()
+									s.StoreNext()
+									s.MuteAll()
+									s.LeaveGame()
+								}
+							} else {
+								s.Message("Incorrect scenario number, please try again.")
+							}
+						} else {
+							s.Message("You aren't allowed to choose a scenario.")
+						}
+					case s.picking == true && s.pickingPlayer == "" && command[0] == "skip" && len(command) == 2:
 						if s.sides.FreeSlots() == 0 {
 							if s.lastSkip != sender {
 								scenarioNumber := types.ParseInt(command[1], -1)
@@ -386,7 +410,7 @@ func (s *Server) Listen() {
 										} else {
 											s.PickingMessage()
 										}
-										if s.picking == true && s.sides.MustStart() && s.scenarios.MustStart() {
+										if s.sides.MustStart() && s.scenarios.MustStart() {
 											s.StartGame()
 											s.StoreNext()
 											s.MuteAll()
@@ -431,7 +455,10 @@ func (s *Server) Listen() {
 						}
 					case command[0] == "help" && len(command) == 1:
 						text := "Command list:\n"
-						if s.picking == true && s.scenarios.MustStart() == false {
+						if s.picking == true && s.pickingPlayer != "" && s.scenarios.MustStart() == false {
+							text += "pick 1 - pick a scenario when picking\n"
+						}
+						if s.picking == true && s.pickingPlayer == "" && s.scenarios.MustStart() == false {
 							text += "skip 1 - skip a scenario when picking\n"
 						}
 						text += "color {red,blue,green,purple,black,brown,orange,white,teal} - set up a color\n" +
@@ -478,21 +505,29 @@ func (s *Server) PickingMessage() {
 		}
 		scenarioList += strconv.Itoa(i+1) + ". " + name + "\n"
 	}
-	var allowedToChoose string
-	if s.lastSkip == "" {
-		allowedToChoose = "any side"
-	} else {
-		for _, v := range s.sides {
-			if v.Player != s.lastSkip {
-				allowedToChoose = v.Player
-				break
+	if s.pickingPlayer == "" {
+		var allowedToChoose string
+		if s.lastSkip == "" {
+			allowedToChoose = "any side"
+		} else {
+			for _, v := range s.sides {
+				if v.Player != s.lastSkip {
+					allowedToChoose = v.Player
+					break
+				}
 			}
 		}
+		s.Message("Please choose the most unwanted scenario:\n" +
+			scenarioList +
+			"\nAllowed to choose: " + allowedToChoose +
+			"\nCommand: \"skip 1\" (change \"1\" with an actual scenario number)")
+	} else {
+		allowedToChoose := s.pickingPlayer
+		s.Message("Please choose the scenario to play:\n" +
+			scenarioList +
+			"\nAllowed to choose: " + allowedToChoose +
+			"\nCommand: \"pick 1\" (change \"1\" with an actual scenario number)")
 	}
-	s.Message("Please choose the most unwanted map:\n" +
-		scenarioList +
-		"\nAllowed to choose: " + allowedToChoose +
-		"\nCommand: \"skip 1\" (change \"1\" with an actual scenario number)")
 }
 
 func (s *Server) Error() error {

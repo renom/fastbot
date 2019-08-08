@@ -50,8 +50,9 @@ var (
 )
 
 type GameConfig struct {
-	Players   []string
-	Scenarios []ScenarioConfig
+	Players       []string
+	PickingPlayer string
+	Scenarios     []ScenarioConfig
 }
 
 type ScenarioConfig struct {
@@ -135,6 +136,14 @@ func LoadFromArgs() {
 		fields := strings.Split(v, ":")
 		if len(fields) > 0 {
 			p := strings.Split(fields[0], ",")
+			pickingPlayer := ""
+			for i, v := range p {
+				if v[len(v)-1] == '^' {
+					p[i] = v[:len(v)-1]
+					pickingPlayer = v[:len(v)-1]
+					break
+				}
+			}
 			var d []string // defines
 			if len(fields) > 2 {
 				d = strings.Split(fields[2], ",")
@@ -150,7 +159,7 @@ func LoadFromArgs() {
 			} else {
 				s = append(s[:0:0], scenarios...)
 			}
-			Games = append(Games, GameConfig{p, s})
+			Games = append(Games, GameConfig{p, pickingPlayer, s})
 		}
 	}
 }
