@@ -55,6 +55,7 @@ type Server struct {
 	timeout       time.Duration
 	err           error
 	conn          net.Conn
+	disconnecting bool
 	sides         serverTypes.SideList
 	picking       bool
 	pickingPlayer string
@@ -242,8 +243,17 @@ func (s *Server) LeaveGame() {
 	s.sendData(wml.EmptyTag("leave_game").Bytes())
 }
 
+func (s *Server) Disconnect() {
+	s.disconnecting = true
+}
+
 func (s *Server) Listen() {
 	for {
+		if s.disconnecting == true {
+			s.conn.Close()
+			s.disconnecting = false
+			break
+		}
 		data := wml.ParseData(string(s.receiveData()))
 		if len(data) > 0 {
 			fmt.Printf("Received: %q\n", data)
@@ -365,6 +375,10 @@ func (s *Server) Listen() {
 						s.Whisper(sender, "Player list: "+strings.Join(s.players, ", "))
 					case command[0] == "admins" && len(command) == 1:
 						s.Whisper(sender, "Admin list: "+strings.Join(s.admins, ", "))
+					case command[0] == "stop" && len(command) == 1:
+						s.Whisper(sender, "Logging out...")
+						s.LeaveGame()
+						s.Disconnect()
 					case command[0] == "help" && len(command) == 1:
 						s.Whisper(sender, "Command list:\n"+
 							"color 1 {red,blue,green,purple,black,brown,orange,white,teal} - set up a side's color\n"+
@@ -374,6 +388,7 @@ func (s *Server) Listen() {
 							"players - display players allowed to join\n"+
 							"players {username_1,username_2,...,username_N} - set up players allowed to join\n"+
 							"admins - display admins list\n"+
+							"stop - stop the bot instance\n"+
 							"help - request command reference")
 					}
 				}
@@ -403,6 +418,7 @@ func (s *Server) Listen() {
 									s.StoreNext()
 									s.MuteAll()
 									s.LeaveGame()
+									s.Disconnect()
 								}
 							} else {
 								s.Message("Incorrect scenario number, please try again.")
@@ -428,6 +444,7 @@ func (s *Server) Listen() {
 											s.StoreNext()
 											s.MuteAll()
 											s.LeaveGame()
+											s.Disconnect()
 										}
 									} else {
 										s.Message("The chosen scenario is already skipped, choose another one.")
@@ -453,12 +470,14 @@ func (s *Server) Listen() {
 								s.StartGame()
 								s.MuteAll()
 								s.LeaveGame()
+								s.Disconnect()
 							}
 							if s.picking == true && s.sides.MustStart() && s.scenarios.MustStart() {
 								s.StartGame()
 								s.StoreNext()
 								s.MuteAll()
 								s.LeaveGame()
+								s.Disconnect()
 							}
 						}
 					case len(command) == 2 && command[0] == "not" && command[1] == "ready":
