@@ -430,7 +430,7 @@ func (s *Server) Listen() {
 						if s.sides.FreeSlots() == 0 {
 							if s.lastSkip != sender {
 								scenarioNumber := types.ParseInt(command[1], -1)
-								if scenarioNumber != -1 && scenarioNumber <= len(s.scenarios) {
+								if scenarioNumber > 0 && scenarioNumber <= len(s.scenarios) {
 									if s.scenarios[scenarioNumber-1].Skip == false {
 										s.scenarios[scenarioNumber-1].Skip = true
 										s.lastSkip = sender
