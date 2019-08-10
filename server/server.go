@@ -406,7 +406,7 @@ func (s *Server) Listen() {
 					case s.picking == true && s.pickingPlayer != "" && command[0] == "pick" && len(command) == 2:
 						if sender == s.pickingPlayer {
 							scenarioNumber := types.ParseInt(command[1], -1)
-							if scenarioNumber != -1 && scenarioNumber <= len(s.scenarios) {
+							if scenarioNumber > 0 && scenarioNumber <= len(s.scenarios) {
 								for i := range s.scenarios {
 									if i != scenarioNumber-1 {
 										s.scenarios[i].Skip = true
