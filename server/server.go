@@ -352,9 +352,12 @@ func (s *Server) Listen() {
 					case command[0] == "slot" && len(command) == 3:
 						side := types.ParseInt(command[1], -1)
 						observer := command[2]
-						if s.sides.HasSide(side) && s.observers.ContainsValue(observer) {
+						if s.sides.HasSide(side) && s.observers.ContainsValue(observer) && !s.sides.HasPlayer(observer) {
 							s.ChangeSide(side, "insert", wml.Data{"is_host": false, "is_local": false, "current_player": observer, "name": observer, "player_id": observer})
+							player := s.sides.Side(side).Player
+							s.observers.DeleteValue(observer)
 							s.sides.Side(side).Player = observer
+							s.observers = append(s.observers, player)
 							if s.picking == true && s.sides.FreeSlots() == 0 {
 								if s.scenarios.MustStart() == false {
 									s.PickingMessage()
@@ -374,7 +377,10 @@ func (s *Server) Listen() {
 							side = s.sides.Find(command[1]).Side
 						}
 						if s.sides.HasSide(side) && s.sides.Side(side).Player != "" {
+							player := s.sides.Side(side).Player
 							s.ChangeSide(side, "delete", wml.Data{"current_player": "x", "name": "x", "player_id": "x"})
+							s.sides.Side(side).Player = ""
+							s.observers = append(s.observers, player)
 						}
 					case command[0] == "players" && len(command) == 1:
 						s.Whisper(sender, "Player list: "+strings.Join(s.players, ", "))
