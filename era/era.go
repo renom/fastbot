@@ -28,6 +28,7 @@ type Era struct {
 	Name     string
 	Body     string
 	Factions []wml.Data
+	Events   []wml.RawData
 }
 
 var eras []byte
@@ -53,5 +54,12 @@ func Parse(id string) Era {
 		}
 	}
 
-	return Era{id, name, body, factions}
+	rEvents, _ := regexp.Compile(`(?U)\[event\]\n((?:.*\n)*)[\t ]*\[/event\]`)
+
+	events := []wml.RawData{}
+	for _, v := range rEvents.FindAllStringSubmatch(body, -1) {
+		events = append(events, wml.RawData(v[1]))
+	}
+
+	return Era{id, name, body, factions, events}
 }

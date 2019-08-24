@@ -150,6 +150,11 @@ func (g *Game) scenarioBlock() string {
 	attributes["has_mod_events"] = true
 	attributes["objectives"] = "<big>Victory:</big>\n<span color='#00ff00'>• Defeat enemy leader(s)</span>"
 	attributes["turns"] = -1
+	events := wml.Multiple{}
+	for _, v := range g.Era.Events {
+		events = append(events, v)
+	}
+	attributes["event"] = events
 	scenario = r_attributes.ReplaceAllString(scenario, matches[1]+attributes.Indent(1)+matches[3])
 
 	return scenario
