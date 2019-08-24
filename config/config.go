@@ -19,6 +19,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -50,6 +51,7 @@ var (
 )
 
 type GameConfig struct {
+	Title         string
 	Players       []string
 	PickingPlayer string
 	Scenarios     []ScenarioConfig
@@ -159,7 +161,11 @@ func LoadFromArgs() {
 			} else {
 				s = append(s[:0:0], scenarios...)
 			}
-			Games = append(Games, GameConfig{p, pickingPlayer, s})
+			t := Title
+			for j, w := range p {
+				t = strings.ReplaceAll(t, "{Player"+strconv.Itoa(j+1)+"}", w)
+			}
+			Games = append(Games, GameConfig{t, p, pickingPlayer, s})
 		}
 	}
 }

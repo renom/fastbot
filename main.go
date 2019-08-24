@@ -17,8 +17,6 @@
 package main
 
 import (
-	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/renom/fastbot/config"
@@ -31,10 +29,6 @@ func main() {
 
 	var wg sync.WaitGroup
 	for i, v := range config.Games {
-		t := config.Title
-		for j, w := range v.Players {
-			t = strings.ReplaceAll(t, "{Player"+strconv.Itoa(j+1)+"}", w)
-		}
 		var scenarios []scenario.Scenario
 		for _, x := range v.Scenarios {
 			scenarios = append(scenarios, scenario.FromPath(x.Path, x.Defines))
@@ -46,7 +40,7 @@ func main() {
 			config.Accounts[i].Username,
 			config.Accounts[i].Password,
 			config.Era,
-			t,
+			v.Title,
 			scenarios,
 			config.Admins,
 			v.Players,
