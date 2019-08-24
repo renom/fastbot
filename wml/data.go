@@ -110,7 +110,7 @@ func (d *Data) Indent(nesting uint) string {
 		case RawData:
 			subTags += prepend
 			subTags += tabulation + "[" + key + "]\n" +
-				IndentString(string(value.(RawData)), nesting+1) +
+				string(value.(RawData)) +
 				tabulation + "[/" + key + "]\n"
 		case Multiple:
 			for _, v := range value.(Multiple) {
@@ -121,9 +121,14 @@ func (d *Data) Indent(nesting uint) string {
 						subTags += prepend
 						subTags += (&Data{key: v}).Indent(nesting)
 					}
-				case Data, RawData:
+				case Data:
 					subTags += prepend
 					subTags += (&Data{key: v}).Indent(nesting)
+				case RawData:
+					subTags += prepend
+					subTags += tabulation + "[" + key + "]\n" +
+						string(v.(RawData)) +
+						tabulation + "[/" + key + "]\n"
 				}
 			}
 			/*case []Data:
