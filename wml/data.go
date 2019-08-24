@@ -121,14 +121,9 @@ func (d *Data) Indent(nesting uint) string {
 						subTags += prepend
 						subTags += (&Data{key: v}).Indent(nesting)
 					}
-				case Data:
+				case Data, RawData:
 					subTags += prepend
 					subTags += (&Data{key: v}).Indent(nesting)
-				case RawData:
-					subTags += prepend
-					subTags += tabulation + "[" + key + "]\n" +
-						string(v.(RawData)) +
-						tabulation + "[/" + key + "]\n"
 				}
 			}
 			/*case []Data:
