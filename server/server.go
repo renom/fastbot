@@ -196,6 +196,10 @@ func (s *Server) Connect() error {
 func (s *Server) HostGame() {
 	s.sendData((&wml.Tag{"create_game", wml.Data{"name": s.title, "password": ""}}).Bytes())
 	s.sendData(s.game)
+	s.sides.Side(1).Color = "orange"
+	s.ChangeSide(1, "insert", wml.Data{"color": "orange"})
+	s.sides.Side(2).Color = "purple"
+	s.ChangeSide(2, "insert", wml.Data{"color": "purple"})
 }
 
 func (s *Server) StartGame() {
