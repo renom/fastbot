@@ -538,7 +538,7 @@ func (s *Server) Whisper(receiver string, text string) {
 }
 
 func (s *Server) PickingMessage() {
-	var scenarioList string
+	var scenarioList []string
 	for i, v := range s.scenarios {
 		var name string
 		if v.Skip == false {
@@ -546,7 +546,18 @@ func (s *Server) PickingMessage() {
 		} else {
 			name = "_"
 		}
-		scenarioList += strconv.Itoa(i+1) + ". " + name + "\n"
+		scenarioList = append(scenarioList, "["+strconv.Itoa(i+1)+"] "+name)
+	}
+	scenarioListString := ""
+	rowSize := 4
+	for i := 0; i < len(scenarioList); i += rowSize {
+		var j int
+		if i+rowSize < len(scenarioList) {
+			j = i + rowSize
+		} else {
+			j = len(scenarioList)
+		}
+		scenarioListString += strings.Join(scenarioList[i:j], "     ") + "\n"
 	}
 	if s.pickingPlayer == "" {
 		var allowedToChoose string
@@ -561,13 +572,13 @@ func (s *Server) PickingMessage() {
 			}
 		}
 		s.Message("Please choose the most unwanted scenario:\n" +
-			scenarioList +
+			scenarioListString +
 			"\nAllowed to choose: " + allowedToChoose +
 			"\nCommand: \"skip 1\" (change \"1\" with an actual scenario number)")
 	} else {
 		allowedToChoose := s.pickingPlayer
 		s.Message("Please choose the scenario to play:\n" +
-			scenarioList +
+			scenarioListString +
 			"\nAllowed to choose: " + allowedToChoose +
 			"\nCommand: \"pick 1\" (change \"1\" with an actual scenario number)")
 	}
