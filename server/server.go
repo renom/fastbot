@@ -67,7 +67,7 @@ type Server struct {
 	ActionBonus   int
 }
 
-var colors = types.StringList{"red", "blue", "green", "purple", "black", "brown", "orange", "white", "teal"}
+var colors = types.StringList{"red", "green", "purple", "orange", "white", "teal"}
 
 func NewServer(hostname string, port uint16, version string, username string,
 	password string, era string, title string, scenarios []scenario.Scenario,
@@ -392,7 +392,7 @@ func (s *Server) Listen() {
 						s.Disconnect()
 					case command[0] == "help" && len(command) == 1:
 						s.Whisper(sender, "Command list:\n"+
-							"color 1 {red,blue,green,purple,black,brown,orange,white,teal} - set up a side's color\n"+
+							"color 1 {red,green,purple,orange,white,teal} - set up a side's color\n"+
 							"slot 1 username - change the side's controller\n"+
 							"drop 1 - remove player from a slot\n"+
 							"drop username - the same but by username\n"+
@@ -504,7 +504,7 @@ func (s *Server) Listen() {
 						if s.picking == true && s.pickingPlayer == "" && s.scenarios.MustStart() == false {
 							text += "skip 1 - skip a scenario when picking\n"
 						}
-						text += "color {red,blue,green,purple,black,brown,orange,white,teal} - set up a color\n" +
+						text += "color {red,green,purple,orange,white,teal} - set up a color\n" +
 							"ready - ready to start the game\n" +
 							"not ready - decline readiness\n" +
 							"help - request command reference"
