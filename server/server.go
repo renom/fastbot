@@ -248,6 +248,7 @@ func (s *Server) LeaveGame() {
 }
 
 func (s *Server) Disconnect() {
+	time.Sleep(time.Minute)
 	s.disconnecting = true
 }
 
