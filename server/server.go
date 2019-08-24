@@ -208,7 +208,7 @@ func (s *Server) StartGame() {
 	rand.Seed(time.Now().UTC().UnixNano())
 	index := rand.Int31n(6)
 	faction1 := s.era.Factions[index]
-	faction2 := append(s.era.Factions[:index], s.era.Factions[index+1:]...)[rand.Int31n(5)]
+	faction2 := append(append([]wml.Data{}, s.era.Factions[:index]...), s.era.Factions[index+1:]...)[rand.Int31n(5)]
 	data := wml.Data{"scenario_diff": wml.Data{"change_child": wml.Data{
 		"index": 0,
 		"scenario": wml.Data{"change_child": wml.Multiple{
