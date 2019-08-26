@@ -35,7 +35,7 @@ import (
 	"github.com/renom/fastbot/scenario/picker"
 	serverTypes "github.com/renom/fastbot/server/types"
 	"github.com/renom/fastbot/types"
-	"github.com/renom/fastbot/wml"
+	"github.com/renom/wml"
 )
 
 type Server struct {
