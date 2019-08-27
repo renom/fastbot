@@ -15,7 +15,7 @@
 
 package types
 
-import sc "github.com/renom/fastbot/scenario"
+import sc "github.com/renom/go-wesnoth/scenario"
 
 type Scenario struct {
 	Skip     bool

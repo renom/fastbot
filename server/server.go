@@ -29,12 +29,12 @@ import (
 	"strings"
 	"time"
 
-	e "github.com/renom/fastbot/era"
-	"github.com/renom/fastbot/game"
-	"github.com/renom/fastbot/scenario"
-	"github.com/renom/fastbot/scenario/picker"
+	"github.com/renom/fastbot/picker"
 	serverTypes "github.com/renom/fastbot/server/types"
 	"github.com/renom/fastbot/types"
+	e "github.com/renom/go-wesnoth/era"
+	"github.com/renom/go-wesnoth/game"
+	"github.com/renom/go-wesnoth/scenario"
 	"github.com/renom/go-wml"
 )
 

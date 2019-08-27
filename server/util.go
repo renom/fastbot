@@ -23,7 +23,7 @@ import (
 
 	"github.com/renom/fastbot/config"
 	serverTypes "github.com/renom/fastbot/server/types"
-	"github.com/renom/fastbot/wesnoth"
+	"github.com/renom/go-wesnoth/wesnoth"
 	"github.com/renom/go-wml"
 )
 

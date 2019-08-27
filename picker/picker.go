@@ -15,7 +15,7 @@
 
 package picker
 
-import s "github.com/renom/fastbot/scenario"
+import s "github.com/renom/go-wesnoth/scenario"
 
 func Scenario() *s.Scenario {
 	return &scenario

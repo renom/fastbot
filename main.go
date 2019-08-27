@@ -20,12 +20,19 @@ import (
 	"sync"
 
 	"github.com/renom/fastbot/config"
-	"github.com/renom/fastbot/scenario"
 	"github.com/renom/fastbot/server"
+	"github.com/renom/go-wesnoth/era"
+	"github.com/renom/go-wesnoth/scenario"
+	"github.com/renom/go-wesnoth/wesnoth"
 )
 
 func main() {
 	config.LoadFromArgs()
+
+	// Apply config to go-wesnoth
+	wesnoth.Output = config.TmpDir + "/output"
+	era.ErasPath = config.Eras
+	scenario.TmpDir = config.TmpDir
 
 	var wg sync.WaitGroup
 	for i, v := range config.Games {
