@@ -22,7 +22,7 @@ import (
 	"github.com/renom/fastbot/era"
 	"github.com/renom/fastbot/scenario"
 	"github.com/renom/fastbot/wesnoth"
-	"github.com/renom/wml"
+	"github.com/renom/go-wml"
 )
 
 var (

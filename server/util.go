@@ -24,7 +24,7 @@ import (
 	"github.com/renom/fastbot/config"
 	serverTypes "github.com/renom/fastbot/server/types"
 	"github.com/renom/fastbot/wesnoth"
-	"github.com/renom/wml"
+	"github.com/renom/go-wml"
 )
 
 func SplitMessage(text string) []string {

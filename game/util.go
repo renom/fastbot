@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/renom/wml"
+	"github.com/renom/go-wml"
 )
 
 func sideTag(data wml.Data, color string, player string) wml.Tag {

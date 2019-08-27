@@ -20,7 +20,7 @@ import (
 
 	"github.com/renom/fastbot/config"
 	"github.com/renom/fastbot/wesnoth"
-	"github.com/renom/wml"
+	"github.com/renom/go-wml"
 )
 
 type Era struct {
