@@ -35,7 +35,7 @@ func ParseAccounts(text string) AccountList {
 			account.Username = fields[0]
 		}
 		if len(fields) > 1 {
-			account.Password = fields[1]
+			account.Password = escapePassword(fields[1])
 		}
 		result = append(result, account)
 	}
@@ -44,4 +44,12 @@ func ParseAccounts(text string) AccountList {
 
 func Guest(username string) Account {
 	return Account{Username: username}
+}
+
+func escapePassword(password string) string {
+	password = strings.ReplaceAll(password, "&", "&amp;")
+	password = strings.ReplaceAll(password, "\"", "&quot;")
+	password = strings.ReplaceAll(password, "<", "&lt;")
+	password = strings.ReplaceAll(password, ">", "&gt;")
+	return password
 }

@@ -17,6 +17,7 @@ package config
 
 import (
 	"flag"
+	"net"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -24,6 +25,11 @@ import (
 	"time"
 
 	"github.com/renom/fastbot/types"
+	"golang.org/x/mod/semver"
+)
+
+const (
+	MinVersionForTLS = "1.16.0"
 )
 
 // Default Bot's parameters
@@ -31,7 +37,8 @@ var (
 	// Accessed from the outside
 	Hostname        = "127.0.0.1"
 	Port     uint16 = 15000
-	Version         = "1.14.7"
+	Version         = "1.16.0"
+	TLS             = true
 	Accounts        = AccountList{Guest("wl_bot_1"), Guest("wl_bot_2")}
 	Era             = "default"
 	Title           = "Game 1"
@@ -83,12 +90,22 @@ func LoadFromArgs() {
 	flag.StringVar(&TmpDir, "tmpDir", TmpDir, "The path to the tmp folder")
 	// Parameters that require extra check
 	portUint := flag.Uint("port", uint(Port), "The port")
+	modeString := flag.String("mode", "auto", "Connection mode, possible values are \"auto\", \"new\" or \"old\"")
 	timerString := flag.String("timer", "", "The timer values, comma-separated sequence: init_time,turn_bonus,reservoir_time,action_bonus")
 	scenarioString := flag.String("scenarios", "", "The default scenario")
 	accountsString := flag.String("accounts", "", "The bot accounts")
 	adminsString := flag.String("admins", "", "The admin usernames")
 	flag.Parse()
 	// Extra check
+	if *modeString == "auto" {
+		TLS = tls(Hostname, Version, MinVersionForTLS)
+	} else if *modeString == "new" {
+		TLS = true
+	} else if *modeString == "old" {
+		TLS = false
+	} else {
+		flag.PrintDefaults()
+	}
 	if 0 < int(*portUint) && int(*portUint) <= 65535 {
 		Port = uint16(*portUint)
 	}
@@ -168,4 +185,29 @@ func LoadFromArgs() {
 			Games = append(Games, GameConfig{t, p, pickingPlayer, s})
 		}
 	}
+}
+
+func tls(hostname, version, minVersion string) bool {
+	if semver.Compare("v"+version, "v"+minVersion) < 0 {
+		return false
+	}
+	if net.ParseIP(hostname) == nil {
+		if hosts, err := net.LookupIP(hostname); err == nil {
+			if isLoopback(hosts) {
+				return false
+			}
+		}
+	} else {
+		return false
+	}
+	return true
+}
+
+func isLoopback(hosts []net.IP) bool {
+	for _, host := range hosts {
+		if host.IsLoopback() == false {
+			return false
+		}
+	}
+	return true
 }

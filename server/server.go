@@ -18,9 +18,11 @@ package server
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/tls"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"net"
@@ -42,6 +44,7 @@ type Server struct {
 	hostname      string
 	port          uint16
 	version       string
+	tls           bool
 	username      string
 	password      string
 	era           e.Era
@@ -69,7 +72,7 @@ type Server struct {
 
 var colors = types.StringList{"red", "green", "purple", "orange", "white", "teal"}
 
-func NewServer(hostname string, port uint16, version string, username string,
+func NewServer(hostname string, port uint16, version string, tls bool, username string,
 	password string, era string, title string, scenarios []scenario.Scenario,
 	admins types.StringList, players types.StringList, pickingPlayer string, timerEnabled bool,
 	initTime int, turnBonus int, reservoirTime int, actionBonus int,
@@ -78,6 +81,7 @@ func NewServer(hostname string, port uint16, version string, username string,
 		hostname:      hostname,
 		port:          port,
 		version:       version,
+		tls:           tls,
 		username:      username,
 		password:      password,
 		era:           e.Parse(era),
@@ -123,12 +127,33 @@ func (s *Server) Connect() error {
 	}
 	//s.conn.SetDeadline(time.Now().Add(s.timeout))
 	// Init the connection to the server
-	s.conn.Write([]byte{0, 0, 0, 0})
+	if s.tls == true {
+		s.conn.Write([]byte{0, 0, 0, 1})
+	} else {
+		s.conn.Write([]byte{0, 0, 0, 0})
+	}
 	var buffer []byte
 	if buffer = s.read(4); s.err != nil {
+		if s.err == io.EOF && s.tls == true {
+			s.tls = false
+			return s.Connect()
+		}
 		return s.err
 	}
-	fmt.Println(binary.BigEndian.Uint32(buffer))
+	response := binary.BigEndian.Uint32(buffer)
+	fmt.Println(response)
+	switch {
+	case response == 0 && s.tls == true:
+		tlsConn := tls.Client(s.conn, &tls.Config{ServerName: s.hostname})
+		if tlsConn == nil {
+			return fmt.Errorf("Unable to establish a tls connection")
+		}
+		s.conn = tlsConn
+	case response == 42 && s.tls == false:
+	case response == 0xffffffff:
+	default:
+		return fmt.Errorf("Unknown response code")
+	}
 	// Expects the server to ask for a version, otherwise return an error
 	if data := s.receiveData(); bytes.Equal(data, wml.EmptyTag("version").Bytes()) {
 		s.sendData((&wml.Tag{"version", wml.Data{"version": s.version}}).Bytes())
@@ -155,23 +180,40 @@ func (s *Server) Connect() error {
 					}
 				}
 			}
-			fallthrough
+			return errors.New("Unable to parse the redirect data")
 		default:
 			return errors.New("Expects the server to require a log in step, but it doesn't.")
 		}
 	}
-	rawData := s.receiveData()
-	data := wml.ParseData(string(rawData))
-	switch {
-	case data.Contains("error"):
+	data := wml.ParseData(string(s.receiveData()))
+	if data.Contains("error") {
 		if errorTag, ok := data["error"].(wml.Data); ok {
 			if code, ok := errorTag["error_code"].(string); ok {
 				switch code {
 				case "200":
-					if errorTag["password_request"].(string) == "yes" && errorTag["phpbb_encryption"].(string) == "yes" {
-						salt := errorTag["salt"].(string)
-						s.sendData((&wml.Tag{"login", wml.Data{"username": s.username, "password": Sum(s.password, salt)}}).Bytes())
-						goto nextCase
+					if errorTag["password_request"].(string) == "yes" {
+						var phpbbEcryption bool
+						var password string
+						if val, ok := errorTag["phpbb_encryption"].(string); ok {
+							if val == "yes" {
+								phpbbEcryption = true
+							}
+						}
+						if phpbbEcryption == true {
+							var salt string
+							if val, ok := errorTag["salt"].(string); ok {
+								salt = val
+							} else {
+								return errors.New("A salt must be provided in order to use PhpBB encryption")
+							}
+							if password, s.err = Sum(s.password, salt); s.err != nil {
+								return s.err
+							}
+						} else {
+							password = s.password
+						}
+						s.sendData((&wml.Tag{"login", wml.Data{"username": s.username, "password": password}}).Bytes())
+						data = wml.ParseData(string(s.receiveData()))
 					}
 				case "105":
 					if message, ok := errorTag["message"].(string); ok {
@@ -182,15 +224,11 @@ func (s *Server) Connect() error {
 				}
 			}
 		}
-		break
-	nextCase:
-		fallthrough
-	case bytes.Equal(rawData, wml.EmptyTag("join_lobby").Bytes()):
-		return nil
-	default:
-		return errors.New("An unknown error occurred")
 	}
-	return nil
+	if data.Contains("join_lobby") {
+		return nil
+	}
+	return errors.New("An unknown error occurred")
 }
 
 func (s *Server) HostGame() {
@@ -589,12 +627,18 @@ func (s *Server) Error() error {
 }
 
 func (s *Server) receiveData() []byte {
-	buffer := s.read(4)
+	var buffer []byte
+	if buffer = s.read(4); s.err != nil {
+		return nil
+	}
 	if len(buffer) < 4 {
 		return nil
 	}
 	size := int(binary.BigEndian.Uint32(buffer))
-	reader, _ := gzip.NewReader(bytes.NewBuffer(s.read(size)))
+	if buffer = s.read(size); s.err != nil {
+		return nil
+	}
+	reader, _ := gzip.NewReader(bytes.NewBuffer(buffer))
 	var result []byte
 	if result, s.err = ioutil.ReadAll(reader); s.err != nil {
 		return nil

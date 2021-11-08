@@ -18,22 +18,39 @@ package server
 import (
 	"bytes"
 	"crypto/md5"
+	"fmt"
+	"strconv"
+	_ "unsafe"
+
+	_ "golang.org/x/crypto/bcrypt"
 )
 
 var itoa []byte = []byte("./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
 
-func Sum(password string, salt string) string {
+func Sum(password string, salt string) (string, error) {
 	p := []byte(password)
 	s := []byte(salt)
-	salt1 := append([]byte{}, s[4:4+8]...)
-	salt2 := append([]byte{}, s[12:12+8]...)
-	count := 1 << uint(bytes.IndexByte(itoa, salt[3]))
-	sum := hash(p, salt1, count)
-	sum = hash(sum, salt2, 1<<10)
-	return string(sum)
+	if isMd5(salt) {
+		salt1 := append([]byte{}, s[4:4+8]...)
+		salt2 := append([]byte{}, s[12:12+8]...)
+		count := 1 << uint(bytes.IndexByte(itoa, salt[3]))
+		sum := md5Hash(p, salt1, count)
+		sum = md5Hash(sum, salt2, 1<<10)
+		return string(sum), nil
+	} else if isBcrypt(salt) {
+		salt1 := append([]byte{}, s[:29]...)
+		salt2 := append([]byte{}, s[29:]...)
+		hash, err := bcryptHash(p, salt1)
+		if err != nil {
+			return "", err
+		}
+		sum := md5Hash(hash, salt2, 1<<10)
+		return string(sum), nil
+	}
+	return "", fmt.Errorf("Unknown encryption algorithm")
 }
 
-func hash(password []byte, salt []byte, count int) []byte {
+func md5Hash(password []byte, salt []byte, count int) []byte {
 	hash := md5.Sum(append(salt, password...))
 
 	for {
@@ -45,10 +62,10 @@ func hash(password []byte, salt []byte, count int) []byte {
 		}
 	}
 
-	return encode(hash[:], 16)
+	return md5Encode(hash[:], 16)
 }
 
-func encode(text []byte, count int) []byte {
+func md5Encode(text []byte, count int) []byte {
 	result := []byte{}
 	i := 0
 	for {
@@ -78,3 +95,37 @@ func encode(text []byte, count int) []byte {
 	}
 	return result
 }
+
+func bcryptHash(password []byte, salt []byte) ([]byte, error) {
+	cost, err := strconv.Atoi(string(salt[4:6]))
+	if err != nil {
+		return nil, err
+	}
+	err = crypto_checkCost(cost)
+	if err != nil {
+		return nil, err
+	}
+
+	hash, err := crypto_bcrypt(password, cost, salt[7:])
+	if err != nil {
+		return nil, err
+	}
+	return append(salt[:], hash[:]...), nil
+}
+
+func isMd5(salt string) bool {
+	return salt[0:3] == "$H$"
+}
+
+func isBcrypt(salt string) bool {
+	return salt[0:4] == "$2a$" ||
+		salt[0:4] == "$2b$" ||
+		salt[0:4] == "$2x$" ||
+		salt[0:4] == "$2y$"
+}
+
+//go:linkname crypto_bcrypt golang.org/x/crypto/bcrypt.bcrypt
+func crypto_bcrypt(password []byte, cost int, salt []byte) ([]byte, error)
+
+//go:linkname crypto_checkCost golang.org/x/crypto/bcrypt.checkCost
+func crypto_checkCost(cost int) error

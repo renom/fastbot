@@ -44,6 +44,7 @@ func main() {
 			config.Hostname,
 			config.Port,
 			config.Version,
+			config.TLS,
 			config.Accounts[i].Username,
 			config.Accounts[i].Password,
 			config.Era,
@@ -60,7 +61,10 @@ func main() {
 			config.Timeout)
 		wg.Add(1)
 		go func() {
-			srv.Connect()
+			err := srv.Connect()
+			if err != nil {
+				panic(err)
+			}
 			srv.HostGame()
 			srv.Listen()
 			wg.Done()
